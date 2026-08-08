@@ -1055,15 +1055,10 @@ void RenderContext::SetSizes(
 
 		if (_windowSize.height > sizeLimit.height)
 		{
-			const float aspectRatio = (float)_windowSize.width / _windowSize.height;
+			// Restore the "windowed full screen" behaviour from v0.100.0:
+			// when the window would exceed the monitor, stretch it to fill the whole screen instead of keeping the game's aspect ratio.
 			_windowSize.height = sizeLimit.height;
-			_windowSize.width = (int32_t)(_windowSize.height * aspectRatio);
-			if (_windowSize.width > sizeLimit.width)
-			{
-				const float aspectRatio2 = (float)_windowSize.height / _windowSize.width;
-				_windowSize.width = sizeLimit.width;
-				_windowSize.height = (int32_t)(_windowSize.width * aspectRatio2);
-			}
+			_windowSize.width = sizeLimit.width;
 
 			windowRect = { 0, 0, _windowSize.width, _windowSize.height };
 			AdjustWindowRect(&windowRect, windowStyle, FALSE);
