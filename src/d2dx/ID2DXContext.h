@@ -43,5 +43,7 @@ namespace d2dx
 		virtual Options& GetOptions() = 0;
 
 		virtual uint32_t GetActiveThreadId() const noexcept = 0;
+
+		virtual bool IsMainMenuViewport() const = 0;
 	};
 }

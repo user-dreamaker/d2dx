@@ -190,6 +190,12 @@ Rect d2dx::Metrics::GetRenderRect(
 		return Rect{ 0, 0, desktopSize.width, desktopSize.height };
 	}
 
+	if (gameSize.width <= 0 || gameSize.height <= 0 ||
+		desktopSize.width <= 0 || desktopSize.height <= 0)
+	{
+		return Rect{ 0, 0, 0, 0 };
+	}
+
 	int32_t scaleFactor = 1;
 
 	while (
@@ -230,12 +236,12 @@ Rect d2dx::Metrics::GetRenderRect(
 	}
 
 	assert(
-		rect.offset.x >= 0 &&
+		rect.size.width == 0 ||
+		(rect.offset.x >= 0 &&
 		rect.offset.y >= 0 &&
-		rect.size.width > 0 &&
 		rect.size.height > 0 &&
 		(rect.offset.x + rect.size.width) <= desktopSize.width &&
-		(rect.offset.y + rect.size.height) <= desktopSize.height);
+		(rect.offset.y + rect.size.height) <= desktopSize.height));
 
 	return rect;
 }

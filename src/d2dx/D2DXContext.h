@@ -167,6 +167,11 @@ namespace d2dx
 			return _threadId;
 		}
 
+		virtual bool IsMainMenuViewport() const override
+		{
+			return _majorGameState == MajorGameState::TitleScreen;
+		}
+
 #pragma endregion ID2DXContext
 
 #pragma region IWin32InterceptionHandler
@@ -205,6 +210,9 @@ namespace d2dx
 #pragma endregion ID2InterceptionHandler
 
 	private:		
+		void SetMajorGameState(
+			MajorGameState majorGameState);
+
 		void CheckMajorGameState();
 
 		void PrepareLogoTextureBatch();

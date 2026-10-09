@@ -322,17 +322,33 @@ void D2DXContext::OnTexFilterMode(
 	_scratchBatch.SetFilterMode(filterMode);
 }
 
+void D2DXContext::SetMajorGameState(
+	MajorGameState majorGameState)
+{
+	if (_majorGameState == majorGameState)
+	{
+		return;
+	}
+
+	_majorGameState = majorGameState;
+
+	if (_renderContext && _options.GetFlag(OptionsFlag::NoKeepAspectRatio))
+	{
+		_renderContext->UpdateRenderRect();
+	}
+}
+
 void D2DXContext::CheckMajorGameState()
 {
 	const int32_t batchCount = (int32_t)_batchCount;
 
 	if ((_majorGameState == MajorGameState::Unknown || _majorGameState == MajorGameState::FmvIntro) && batchCount == 0)
 	{
-		_majorGameState = MajorGameState::FmvIntro;
+		SetMajorGameState(MajorGameState::FmvIntro);
 		return;
 	}
 
-	_majorGameState = MajorGameState::Other;
+	MajorGameState majorGameState = MajorGameState::Other;
 
 	for (int32_t i = 0; i < batchCount; ++i)
 	{
@@ -341,10 +357,12 @@ void D2DXContext::CheckMajorGameState()
 
 		if (batch.GetHash() == 0x84ab94c374c42d9a && y0 >= 550.0f)
 		{
-			_majorGameState = MajorGameState::TitleScreen;
+			majorGameState = MajorGameState::TitleScreen;
 			break;
 		}
 	}
+
+	SetMajorGameState(majorGameState);
 }
 
 _Use_decl_annotations_

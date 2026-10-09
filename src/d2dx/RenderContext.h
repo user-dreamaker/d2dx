@@ -97,6 +97,8 @@ namespace d2dx
 			_In_ Size windowSize,
 			_In_ ScreenMode screenMode) override;
 
+		virtual void UpdateRenderRect() override;
+
 		virtual void GetCurrentMetrics(
 			_Out_opt_ Size* gameSize,
 			_Out_opt_ Rect* renderRect) const override;
@@ -122,6 +124,11 @@ namespace d2dx
 
 	private:
 		bool IsIntegerScale() const;
+
+		Rect CalculateRenderRect(
+			_In_ Size displaySize) const;
+
+		void UpdateWindowTitle();
 
 		void UpdateViewport(
 			_In_ Rect rect);

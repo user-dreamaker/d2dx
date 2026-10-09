@@ -73,6 +73,8 @@ namespace d2dx
 			_In_ Size windowSize,
 			_In_ ScreenMode screenMode) = 0;
 
+		virtual void UpdateRenderRect() = 0;
+
 		virtual void GetCurrentMetrics(
 			_Out_opt_ Size* gameSize,
 			_Out_opt_ Rect* renderRect) const = 0;

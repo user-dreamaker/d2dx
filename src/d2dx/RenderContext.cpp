@@ -1055,24 +1055,29 @@ void RenderContext::SetSizes(
 
 		if (_windowSize.height > sizeLimit.height)
 		{
-			const float aspectRatio = (float)_windowSize.width / _windowSize.height;
-			_windowSize.height = sizeLimit.height;
-			_windowSize.width = (int32_t)(_windowSize.height * aspectRatio);
-			if (_windowSize.width > sizeLimit.width)
+			if (GetOptions().GetWindowScale() >= 3.0f)
 			{
-				const float aspectRatio2 = (float)_windowSize.height / _windowSize.width;
 				_windowSize.width = sizeLimit.width;
-				_windowSize.height = (int32_t)(_windowSize.width * aspectRatio2);
+				_windowSize.height = sizeLimit.height;
+			}
+			else
+			{
+				const float aspectRatio = (float)_windowSize.width / _windowSize.height;
+				_windowSize.height = sizeLimit.height;
+				_windowSize.width = (int32_t)(_windowSize.height * aspectRatio);
+				if (_windowSize.width > sizeLimit.width)
+				{
+					const float aspectRatio2 = (float)_windowSize.height / _windowSize.width;
+					_windowSize.width = sizeLimit.width;
+					_windowSize.height = (int32_t)(_windowSize.width * aspectRatio2);
+				}
 			}
 
 			windowRect = { 0, 0, _windowSize.width, _windowSize.height };
 			AdjustWindowRect(&windowRect, windowStyle, FALSE);
 		}
 
-		renderRect = Metrics::GetRenderRect(
-			_gameSize,
-			_windowSize,
-			!_d2dxContext->GetOptions().GetFlag(OptionsFlag::NoKeepAspectRatio));
+		renderRect = CalculateRenderRect(_windowSize);
 
 		const Size newSize = {
 			windowRect.right - windowRect.left,
@@ -1129,10 +1134,7 @@ void RenderContext::SetSizes(
 				SWP_SHOWWINDOW | SWP_NOSENDCHANGING | SWP_FRAMECHANGED);
 		}
 
-		renderRect = Metrics::GetRenderRect(
-			_gameSize,
-			size,
-			!_d2dxContext->GetOptions().GetFlag(OptionsFlag::NoKeepAspectRatio));
+		renderRect = CalculateRenderRect(size);
 	}
 
 	_useSavedWindowPos = true;
@@ -1160,15 +1162,7 @@ void RenderContext::SetSizes(
 		}
 	}
 
-	if (!_d2dxContext->GetOptions().GetFlag(OptionsFlag::NoTitleChange))
-	{
-		char newWindowText[256];
-		sprintf_s(newWindowText, "Diablo II DX [%ix%i, scale %i%%]",
-			_gameSize.width,
-			_gameSize.height,
-			(int)(((float)_renderRect.size.height / _gameSize.height) * 100.0f));
-		::SetWindowTextA(_hWnd, newWindowText);
-	}
+	UpdateWindowTitle();
 
 	D2DX_LOG("Sizes: window %ix%i, game %ix%i, render %ix%i",
 		_windowSize.width,
@@ -1184,6 +1178,66 @@ void RenderContext::SetSizes(
 		UpdateViewport({ 0,0,_gameSize.width, _gameSize.height });
 		Present();
 	}
+}
+
+_Use_decl_annotations_
+Rect RenderContext::CalculateRenderRect(
+	_In_ Size displaySize) const
+{
+	const bool stretchToScreen =
+		GetOptions().GetFlag(OptionsFlag::NoKeepAspectRatio) &&
+		_d2dxContext->IsMainMenuViewport();
+
+	return Metrics::GetRenderRect(_gameSize, displaySize, !stretchToScreen);
+}
+
+void RenderContext::UpdateWindowTitle()
+{
+	if (!_d2dxContext->GetOptions().GetFlag(OptionsFlag::NoTitleChange))
+	{
+		char newWindowText[256];
+		sprintf_s(newWindowText, "Diablo II DX [%ix%i, scale %i%%]",
+			_gameSize.width,
+			_gameSize.height,
+			(int)(((float)_renderRect.size.height / _gameSize.height) * 100.0f));
+		::SetWindowTextA(_hWnd, newWindowText);
+	}
+}
+
+void RenderContext::UpdateRenderRect()
+{
+	if (_gameSize.width <= 0 || _gameSize.height <= 0)
+	{
+		return;
+	}
+
+	const Rect renderRect = CalculateRenderRect(
+		_screenMode == ScreenMode::Windowed ?
+			_windowSize :
+			MonitorSize());
+
+	if (renderRect == _renderRect)
+	{
+		return;
+	}
+
+	_renderRect = renderRect;
+	ClipCursor(true);
+
+	if (_resources &&
+		GetOptions().GetUpscaleMethod() == UpscaleMethod::Rasterize)
+	{
+		_resources->SetFramebufferSize(renderRect.size, _device.Get());
+		SetRenderTargets(
+			_resources->GetFramebufferRtv(RenderContextFramebuffer::Game),
+			_resources->GetFramebufferRtv(RenderContextFramebuffer::SurfaceId));
+	}
+
+	UpdateWindowTitle();
+
+	D2DX_LOG("Render rect: %ix%i",
+		_renderRect.size.width,
+		_renderRect.size.height);
 }
 
 bool RenderContext::IsFrameLatencyWaitableObjectSupported() const
